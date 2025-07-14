@@ -1,0 +1,37 @@
+// No changes needed - perfect as-is
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["filterJson"]
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+model Task {
+    id        String     @id @default(uuid())
+    title     String
+    status    TaskStatus @default(TODO)
+    priority  Priority   @default(MEDIUM)
+    dueDate   DateTime?
+    createdAt DateTime   @default(now()) @map("created_at")
+    updatedAt DateTime   @updatedAt @map("updated_at")
+
+    @@index([status])
+    @@index([priority])
+    @@index([dueDate])
+    @@index([createdAt])
+}
+
+enum TaskStatus {
+    TODO        @map("TODO")
+    IN_PROGRESS @map("IN_PROGRESS")
+    DONE        @map("DONE")
+}
+
+enum Priority {
+    LOW    @map("low")
+    MEDIUM @map("medium")
+    HIGH   @map("high")
+}
