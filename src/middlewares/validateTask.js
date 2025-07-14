@@ -10,6 +10,10 @@ export const validateTask = (req, res, next) => {
     try {
         const { title, status, priority, dueDate } = req.body;
 
+        console.log('Validating task with data:', { title, status, priority, dueDate });
+        console.log('Valid status options:', Object.values(STATUS));
+        console.log('Valid priority options:', Object.values(PRIORITY));
+
         // Validate title exists and is a string
         if (!title || typeof title !== 'string' || title.trim().length === 0) {
             return res.status(400).json({
@@ -29,12 +33,14 @@ export const validateTask = (req, res, next) => {
                 });
             }
 
+            // Case-sensitive check for status
             if (!Object.values(STATUS).includes(status)) {
                 return res.status(400).json({
                     success: false,
-                    error: `Invalid status. Valid options: ${Object.values(STATUS).join(', ')}`,
+                    error: `Invalid status. Valid options are case-sensitive: ${Object.values(STATUS).join(', ')}`,
                     field: 'status',
-                    validOptions: Object.values(STATUS)
+                    validOptions: Object.values(STATUS),
+                    receivedValue: status
                 });
             }
         }
@@ -49,12 +55,14 @@ export const validateTask = (req, res, next) => {
                 });
             }
 
+            // Case-sensitive check for priority
             if (!Object.values(PRIORITY).includes(priority)) {
                 return res.status(400).json({
                     success: false,
-                    error: `Invalid priority. Valid options: ${Object.values(PRIORITY).join(', ')}`,
+                    error: `Invalid priority. Valid options are case-sensitive: ${Object.values(PRIORITY).join(', ')}`,
                     field: 'priority',
-                    validOptions: Object.values(PRIORITY)
+                    validOptions: Object.values(PRIORITY),
+                    receivedValue: priority
                 });
             }
         }
@@ -73,12 +81,14 @@ export const validateTask = (req, res, next) => {
         // Prepare validated data for Prisma
         req.validatedTaskData = {
             title: title.trim(),
-            ...(status && { status }),
-            ...(priority && { priority }),
+            ...(status && { status: status }),
+            ...(priority && { priority: priority }),
             ...(dueDate !== undefined && {
                 dueDate: dueDate ? new Date(dueDate) : null
             })
         };
+
+        console.log('Validated data:', req.validatedTaskData);
 
         next();
     } catch (error) {

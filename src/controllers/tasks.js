@@ -1,5 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { STATUS, PRIORITY, DATE_FILTERS } from '../utils/constants.js';
+// Import the Prisma-generated enum types
+import { Prisma } from '@prisma/client';
 
 /**
  * Create a new task
@@ -11,7 +13,9 @@ import { STATUS, PRIORITY, DATE_FILTERS } from '../utils/constants.js';
  * @param {Object} res - Express response object
  */
 export const createTask = async (req, res) => {
-    const { title, status = STATUS.TODO, priority = PRIORITY.MEDIUM, dueDate } = req.body;
+    // Use the validated data from middleware
+    const validatedData = req.validatedTaskData || {};
+    const { title, status = STATUS.TODO, priority = PRIORITY.MEDIUM, dueDate } = validatedData.title ? validatedData : req.body;
 
     // Validation
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -42,11 +46,26 @@ export const createTask = async (req, res) => {
     }
 
     try {
+        // Log the data being sent to prisma
+        console.log('Creating task with data:', {
+            title: title.trim(),
+            status: status || STATUS.TODO,
+            priority: priority || PRIORITY.MEDIUM,
+            dueDate: dueDate ? new Date(dueDate) : null
+        });
+
+        // Use the validated data
+        // Convert string values to Prisma enum types
         const task = await prisma.task.create({
             data: {
                 title: title.trim(),
-                status: status || STATUS.TODO,  // Ensure default is applied
-                priority: priority || PRIORITY.MEDIUM,  // Ensure default is applied
+                // Use the status directly (already validated)
+                status: status,
+                // For priority, ensure case is handled correctly
+                // If it's lowercase, convert to uppercase for the enum
+                priority: priority.toLowerCase() === 'low' ? 'LOW' :
+                    priority.toLowerCase() === 'medium' ? 'MEDIUM' :
+                        priority.toLowerCase() === 'high' ? 'HIGH' : 'MEDIUM',
                 dueDate: dueDate ? new Date(dueDate) : null
             }
         });
@@ -220,7 +239,11 @@ export const updateTask = async (req, res) => {
             data: {
                 ...(title && { title: title.trim() }),
                 ...(status && { status }),
-                ...(priority && { priority }),
+                ...(priority && {
+                    priority: priority.toLowerCase() === 'low' ? 'LOW' :
+                        priority.toLowerCase() === 'medium' ? 'MEDIUM' :
+                            priority.toLowerCase() === 'high' ? 'HIGH' : 'MEDIUM'
+                }),
                 ...(dueDate !== undefined && {
                     dueDate: dueDate ? new Date(dueDate) : null
                 })
